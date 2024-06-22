@@ -2,6 +2,7 @@ package screensframework;
 
 import java.net.URL;
 import java.sql.Connection;
+import java.sql.PreparedStatement;  // Importación agregada
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ResourceBundle;
@@ -41,20 +42,18 @@ public class ProductoController implements Initializable, ControlledScreen {
     @FXML private TextField tfNombreProducto;
     @FXML private TextField tfPrecioProducto;
     @FXML private TextField tfBuscarProducto;
-    @FXML private ComboBox cbCategoriaProducto;
-    @FXML private ComboBox cbMarcaProducto;
+    @FXML private ComboBox<String> cbCategoriaProducto; // Parametrizado
+    @FXML private ComboBox<String> cbMarcaProducto; // Parametrizado
     @FXML private Label lbCodigoProducto;
     
-    @FXML private TableView tablaProducto;
-    @FXML private TableColumn col;
+    @FXML private TableView<ObservableList<String>> tablaProducto; // Parametrizado
+    @FXML private TableColumn<ObservableList<String>, String> col; // Parametrizado
     private Connection conexion;
     
-    ObservableList<ObservableList> producto;
-    
+    ObservableList<ObservableList<String>> producto; // Parametrizado
     
     @Override
     public void initialize(URL url, ResourceBundle rb) {
-        
         this.cargarDatosTabla();
         
         btEliminarProducto.setDisable(true);
@@ -71,15 +70,15 @@ public class ProductoController implements Initializable, ControlledScreen {
             conexion = DBConnection.connect();
             
             // COMBOBOX DE CATEGORIA
-            String slqCategoria = "SELECT idcategoria, nombre_categoria FROM category";
-            ResultSet resultadoCategoria = conexion.createStatement().executeQuery(slqCategoria);
+            String sqlCategoria = "SELECT idcategoria, nombre_categoria FROM categoria"; // Corregido
+            ResultSet resultadoCategoria = conexion.createStatement().executeQuery(sqlCategoria);
             while(resultadoCategoria.next()) {
                 cbCategoriaProducto.getItems().add(resultadoCategoria.getString("nombre_categoria"));
             }
             
             // COMBOBOX DE MARCAS
-            String slqMarcas = "SELECT idmarca, nombre_marca FROM marca";
-            ResultSet resultadoMarcas = conexion.createStatement().executeQuery(slqMarcas);
+            String sqlMarcas = "SELECT idmarca, nombre_marca FROM marca";
+            ResultSet resultadoMarcas = conexion.createStatement().executeQuery(sqlMarcas);
             while(resultadoMarcas.next()) {
                 cbMarcaProducto.getItems().add(resultadoMarcas.getString("nombre_marca"));
             }
@@ -96,10 +95,10 @@ public class ProductoController implements Initializable, ControlledScreen {
         controlador = pantallaPadre;
     }
     
-    public  void cargarDatosTabla() {
-         producto = FXCollections.observableArrayList();
-         
-         try{
+    public void cargarDatosTabla() {
+        producto = FXCollections.observableArrayList();
+        
+        try {
             conexion = DBConnection.connect();
             //SQL FOR SELECTING ALL OF CUSTOMER
             String sql = "SELECT p.idproducto, "
@@ -129,32 +128,31 @@ public class ProductoController implements Initializable, ControlledScreen {
             
             for (int i = 0; i < rs.getMetaData().getColumnCount(); i++ ) {
                 final int j = i;
-                col = new TableColumn(titulos[i]);
-                col.setCellValueFactory(new Callback<CellDataFeatures<ObservableList, String>, ObservableValue<String>>(){                   
-                    public ObservableValue<String> call(CellDataFeatures<ObservableList, String> parametro) {                                                                                             
-                        return new SimpleStringProperty((String)parametro.getValue().get(j));                       
+                col = new TableColumn<>(titulos[i]);
+                col.setCellValueFactory(new Callback<CellDataFeatures<ObservableList<String>, String>, ObservableValue<String>>(){                   
+                    public ObservableValue<String> call(CellDataFeatures<ObservableList<String>, String> parametro) {                                                                                             
+                        return new SimpleStringProperty(parametro.getValue().get(j));                       
                     }                   
                 });
                 tablaProducto.getColumns().addAll(col);
-                // Asignamos un tamaño a ls columnnas
+                // Asignamos un tamaño a las columnas
                 col.setMinWidth(100);
                 System.out.println("Column ["+i+"] ");
                 // Centrar los datos de la tabla
-                col.setCellFactory(new Callback<TableColumn<String,String>,TableCell<String,String>>(){
+                col.setCellFactory(new Callback<TableColumn<ObservableList<String>, String>, TableCell<ObservableList<String>, String>>(){
                     @Override
-                    public TableCell<String, String> call(TableColumn<String, String> p) {
-                        TableCell cell = new TableCell(){
+                    public TableCell<ObservableList<String>, String> call(TableColumn<ObservableList<String>, String> p) {
+                        return new TableCell<ObservableList<String>, String>(){
                             @Override
-                            protected void updateItem(Object t, boolean bln) {
+                            protected void updateItem(String t, boolean bln) {
                                 if(t != null){
                                     super.updateItem(t, bln);
                                     System.out.println(t);
-                                    setText(t.toString());
+                                    setText(t);
                                     setAlignment(Pos.CENTER); //Setting the Alignment
                                 }
                             }
                         };
-                        return cell;
                     }
                 });
             }
@@ -164,25 +162,24 @@ public class ProductoController implements Initializable, ControlledScreen {
             while(rs.next()){
                 //Iterate Row
                 ObservableList<String> row = FXCollections.observableArrayList();
-                for(int i = 1 ; i <= rs.getMetaData().getColumnCount()+1; i++){
+                for(int i = 1 ; i <= rs.getMetaData().getColumnCount(); i++){
                     //Iterate Column
                     row.add(rs.getString(i));
                 }
                 System.out.println("Row [1] added "+row );
-                producto.addAll(row);
+                producto.add(row);
             }
             //FINALLY ADDED TO TableView
             tablaProducto.setItems(producto);
             rs.close();
-          }catch(SQLException e){
-              System.out.println("Error "+e);            
-          }
+        }catch(SQLException e){
+            System.out.println("Error "+e);            
+        }
     }
     
     public void cargarProductosText(String valor) {
         
         try {
-            
             conexion = DBConnection.connect();
             String sql = "SELECT p.*, c.*, m.* "
                     + " FROM producto AS p, categoria AS c, marca AS m "
@@ -197,7 +194,6 @@ public class ProductoController implements Initializable, ControlledScreen {
                 tfPrecioProducto.setText(rs.getString("precio"));
                 cbCategoriaProducto.setValue(rs.getString("nombre_categoria"));
                 cbMarcaProducto.setValue(rs.getString("nombre_marca"));
-                
             }
             rs.close();
         } catch (SQLException ex) {
@@ -259,146 +255,128 @@ public class ProductoController implements Initializable, ControlledScreen {
     
     @FXML
     private void addProducto(ActionEvent event) {
-        
         int indiceCategoria = cbCategoriaProducto.getSelectionModel().getSelectedIndex() + 1;
         int indiceMarca = cbMarcaProducto.getSelectionModel().getSelectedIndex() + 1;
         
         try {
             conexion = DBConnection.connect();
-            String sql = "INSERT INTO product "
-                    + " (nombre_producto, precio, idcategoria, idmarca) "
-                    + " VALUES (?, ?, ?, ?)";
-            PreparedStatement estado = conexion.prepareStatement(sql);
-            estado.setString(1, tfNombreProducto.getText());
-            estado.setInt(2, Integer.parseInt(tfPrecioProducto.getText()));
-            estado.setInt(3, indiceCategoria);
-            estado.setInt(4, indiceMarca);
+            String sql = "INSERT INTO producto (idcategoria, idmarca, nombre_producto, precio) "
+                    + "VALUES (?,?,?,?)";
+            PreparedStatement prest = conexion.prepareStatement(sql);
+            prest.setInt(1, indiceCategoria);
+            prest.setInt(2, indiceMarca);
+            prest.setString(3, tfNombreProducto.getText());
+            prest.setString(4, tfPrecioProducto.getText());
+            prest.executeUpdate();
+            prest.close();
             
-            int n  = estado.executeUpdate();
+            tfNombreProducto.setText("");
+            tfPrecioProducto.setText("");
+            cbCategoriaProducto.setValue("");
+            cbMarcaProducto.setValue("");
+            lbCodigoProducto.setText("...");
             
-            if (n > 0) {
-                
-                tablaProducto.getColumns().clear();
-                tablaProducto.getItems().clear();
-                cargarDatosTabla();
-            }
-            estado.close();
+            producto.clear();
+            tablaProducto.getColumns().clear();
+            cargarDatosTabla();
             
-        } catch (SQLException e) {
-            System.out.println("Error " + e);
+            JOptionPane.showMessageDialog(null, "Producto Guardado Correctamente");
+            
+        } catch (SQLException ex) {
+            System.out.println("Error "+ex);
         }
         
     }
     
     @FXML
     private void modificarProducto(ActionEvent event) {
-        
         int indiceCategoria = cbCategoriaProducto.getSelectionModel().getSelectedIndex() + 1;
         int indiceMarca = cbMarcaProducto.getSelectionModel().getSelectedIndex() + 1;
         
         try {
             conexion = DBConnection.connect();
+            String sql = "UPDATE producto SET "
+                    + "idcategoria = ?, "
+                    + "idmarca = ?, "
+                    + "nombre_producto = ?, "
+                    + "precio = ? "
+                    + "WHERE idproducto = "+lbCodigoProducto.getText()+"";
+            PreparedStatement prest = conexion.prepareStatement(sql);
+            prest.setInt(1, indiceCategoria);
+            prest.setInt(2, indiceMarca);
+            prest.setString(3, tfNombreProducto.getText());
+            prest.setString(4, tfPrecioProducto.getText());
+            prest.executeUpdate();
+            prest.close();
             
-            String sql = "UPDATE producto "
-                    + " SET nombre_producto = ?, "
-                    + " precio = ?, "
-                    + " idcategoria = ?, "
-                    + " idmarca = ?"
-                    + " WHERE idproducto = "+lbCodigoProducto.getText()+"";
+            tfNombreProducto.setText("");
+            tfPrecioProducto.setText("");
+            cbCategoriaProducto.setValue("");
+            cbMarcaProducto.setValue("");
+            lbCodigoProducto.setText("...");
             
-            PreparedStatement estado = conexion.prepareStatement(sql);
+            producto.clear();
+            tablaProducto.getColumns().clear();
+            cargarDatosTabla();
             
-            estado.setString(1, tfNombreProducto.getText());
-            estado.setInt(2, Integer.parseInt(tfPrecioProducto.getText()));
-            estado.setInt(3, indiceCategoria);
-            estado.setInt(4, indiceMarca);
+            JOptionPane.showMessageDialog(null, "Producto Modificado Correctamente");
             
-            int n = estado.executeUpdate();
+            btAddProducto.setDisable(false);
+            btEliminarProducto.setDisable(true);
+            btModificarProducto.setDisable(true);
+            btAddProducto.setStyle("-fx-background-color:#66CCCC");
+            btEliminarProducto.setStyle("-fx-background-color:grey");
+            btModificarProducto.setStyle("-fx-background-color:grey");
             
-            if (n > 0) {
-                tablaProducto.getColumns().clear();
-                tablaProducto.getItems().clear();
-                cargarDatosTabla();
-            }
-            
-            estado.close();
-        } catch (SQLException e) {
-            System.out.println("Error " + e);
+        } catch (SQLException ex) {
+            System.out.println("Error "+ex);
         }
+        
     }
     
     @FXML
     private void eliminarProducto(ActionEvent event) {
         
-        int confirmarEliminar = JOptionPane.showConfirmDialog(null, "Realmente desea eliminar este producto??");
-        
-        if (confirmarEliminar == 0) {
-            try {
-                conexion = DBConnection.connect();
-
-                String sql = "DELETE FROM producto WHERE idproducto = "+lbCodigoProducto.getText()+"";
-
-                PreparedStatement estado = conexion.prepareStatement(sql);
-
-                estado.executeUpdate();
-
-                if (n > 0) {
-                    tablaProducto.getColumns().clear();
-                    tablaProducto.getItems().clear();
-                    cargarDatosTabla();
-                }
-
-                estado.close();
-
-            } catch (SQLException e) {
-                System.out.println("Error " + e);
-            }
-        }
-    }
-    
-    @FXML
-    private void buscarProducto(ActionEvent event) {
-        
-        tablaProducto.getItems().clear();
         try {
             conexion = DBConnection.connect();
-             String sql = "SELECT p.idproducto, "
-                    + " p.nombre_producto, "
-                    + " p.precio, "
-                    + " c.nombre_categoria AS nom_categoria, "
-                    + " m.nombre_marca AS nom_marca "
-                    + " FROM producto AS p, categoria AS c, marca AS m "
-                    + " WHERE CONCAT "
-                    + " (p.idproducto, '', "
-                    + " p.nombre_producto, '', "
-                    + " p.precio, '', "
-                    + " c.nombre_categoria, '',"
-                    + " m.nombre_marca) LIKE '%"+tfBuscarProducto.getText()+"%' AND "
-                    + " p.idcategoria = c.idcategoria AND "
-                    + " p.idmarca = m.idmarca ORDER BY p.idproducto DESC";
+            String sql = "DELETE FROM producto "
+                    + "WHERE idproducto = "+lbCodigoProducto.getText()+"";
+            PreparedStatement prest = conexion.prepareStatement(sql);
+            prest.executeUpdate();
+            prest.close();
             
-            ResultSet rs = conexion.createStatement().executeQuery(sql);
+            tfNombreProducto.setText("");
+            tfPrecioProducto.setText("");
+            cbCategoriaProducto.setValue("");
+            cbMarcaProducto.setValue("");
+            lbCodigoProducto.setText("...");
             
-            while(rs.next()){
-                
-                ObservableList<String> row = FXCollections.observableArrayList();
-                for(int i = 1 ; i <= rs.getMetaData().getColumnCount(); i++){
-                   
-                    row.add(rs.getString(i));
-                }
-                producto.addAll(row);
-            }
-            tablaProducto.setItems(producto);
-            rs.close();
+            producto.clear();
+            tablaProducto.getColumns().clear();
+            cargarDatosTabla();
             
-        } catch (SQLException e) {
-            System.out.println("Error " + e.getMessage());
+            JOptionPane.showMessageDialog(null, "Producto Eliminado Correctamente");
+            
+            btAddProducto.setDisable(false);
+            btEliminarProducto.setDisable(true);
+            btModificarProducto.setDisable(true);
+            btAddProducto.setStyle("-fx-background-color:#66CCCC");
+            btEliminarProducto.setStyle("-fx-background-color:grey");
+            btModificarProducto.setStyle("-fx-background-color:grey");
+            
+        } catch (SQLException ex) {
+            System.out.println("Error "+ex);
         }
         
     }
     
     @FXML
     private void nuevoProducto(ActionEvent event) {
+        tfNombreProducto.setText("");
+        tfPrecioProducto.setText("");
+        cbCategoriaProducto.setValue("");
+        cbMarcaProducto.setValue("");
+        lbCodigoProducto.setText("...");
         
         btAddProducto.setDisable(false);
         btEliminarProducto.setDisable(true);
@@ -409,18 +387,88 @@ public class ProductoController implements Initializable, ControlledScreen {
     }
     
     @FXML
-    private void irInicioContenido(ActionEvent event) {
-        controlador.setScreen(ScreensFramework.contenidoID);
-    }
-    
-    @FXML
-    private void salir(ActionEvent event) {
-        this.controlesBasicos.salirSistema();
-    }
-    
-    @FXML
-    private void cerrarSesion(ActionEvent event) {
-        
-        controlador.setScreen(ScreensFramework.loginID);
+    private void buscarProducto(ActionEvent event) {
+        String buscar = tfBuscarProducto.getText();
+        producto.clear();
+        tablaProducto.getColumns().clear();
+        try {
+            conexion = DBConnection.connect();
+            String sql = "SELECT p.idproducto, "
+                    + " p.nombre_producto, "
+                    + " p.precio, "
+                    + " c.nombre_categoria AS nom_categoria, "
+                    + " m.nombre_marca AS nom_marca "
+                    + " FROM producto AS p, "
+                    + " categoria AS c, "
+                    + " marca AS m "
+                    + " WHERE p.idcategoria = c.idcategoria AND "
+                    + " p.idmarca = m.idmarca AND "
+                    + " (p.nombre_producto LIKE '%"+buscar+"%' OR "
+                    + " p.precio LIKE '%"+buscar+"%' OR "
+                    + " c.nombre_categoria LIKE '%"+buscar+"%' OR "
+                    + " m.nombre_marca LIKE '%"+buscar+"%')";
+            //ResultSet
+            ResultSet rs = conexion.createStatement().executeQuery(sql);
+            // Títulos de las columnas
+            String[] titulos = {
+                    "Codigo",
+                    "Nombre",
+                    "Precio",
+                    "Categoria",
+                    "Marca"
+            };
+            /**********************************
+             * TABLE COLUMN ADDED DYNAMICALLY *
+             **********************************/
+            
+            for (int i = 0; i < rs.getMetaData().getColumnCount(); i++ ) {
+                final int j = i;
+                col = new TableColumn<>(titulos[i]);
+                col.setCellValueFactory(new Callback<CellDataFeatures<ObservableList<String>, String>, ObservableValue<String>>(){                   
+                    public ObservableValue<String> call(CellDataFeatures<ObservableList<String>, String> parametro) {                                                                                             
+                        return new SimpleStringProperty(parametro.getValue().get(j));                       
+                    }                   
+                });
+                tablaProducto.getColumns().addAll(col);
+                // Asignamos un tamaño a las columnas
+                col.setMinWidth(100);
+                System.out.println("Column ["+i+"] ");
+                // Centrar los datos de la tabla
+                col.setCellFactory(new Callback<TableColumn<ObservableList<String>, String>, TableCell<ObservableList<String>, String>>(){
+                    @Override
+                    public TableCell<ObservableList<String>, String> call(TableColumn<ObservableList<String>, String> p) {
+                        return new TableCell<ObservableList<String>, String>(){
+                            @Override
+                            protected void updateItem(String t, boolean bln) {
+                                if(t != null){
+                                    super.updateItem(t, bln);
+                                    System.out.println(t);
+                                    setText(t);
+                                    setAlignment(Pos.CENTER); //Setting the Alignment
+                                }
+                            }
+                        };
+                    }
+                });
+            }
+            /********************************
+             * Cargamos de la base de datos *
+             ********************************/
+            while(rs.next()){
+                //Iterate Row
+                ObservableList<String> row = FXCollections.observableArrayList();
+                for(int i = 1 ; i <= rs.getMetaData().getColumnCount(); i++){
+                    //Iterate Column
+                    row.add(rs.getString(i));
+                }
+                System.out.println("Row [1] added "+row );
+                producto.add(row);
+            }
+            //FINALLY ADDED TO TableView
+            tablaProducto.setItems(producto);
+            rs.close();
+        }catch(SQLException e){
+            System.out.println("Error "+e);            
+        }
     }
 }

@@ -25,13 +25,15 @@ public class RegistroController implements Initializable, ControlledScreen {
     ScreensController controlador;
     private Validaciones validation = new Validaciones();
     private ControlesBasicos controlesBasicos = new ControlesBasicos();
-    public TextField tfAddNombre;
-    public TextField tfAddApellido;
-    public TextField tfAddCorreo;
-    public TextField tfAddUser;
-    public TextField tfAddPass;
-    public PasswordField tfConfirmar;
-    public ComboBox cbAddsex;
+    
+    @FXML public TextField tfAddNombre;
+    @FXML public TextField tfAddApellido;
+    @FXML public TextField tfAddCorreo;
+    @FXML public TextField tfAddUser;
+    @FXML public TextField tfAddPass;
+    @FXML public PasswordField tfConfirmar;
+    @FXML public ComboBox<String> cbAddsex;
+    
     private Connection conexion;
     
     @Override
@@ -39,56 +41,52 @@ public class RegistroController implements Initializable, ControlledScreen {
         ObservableList<String> options = FXCollections.observableArrayList(
                 "Hombre",
                 "Mujer"
-                );
-        cbAddsex.setItems(Options);
+        );
+        cbAddsex.setItems(options);
         
         // Escuchador para comprobar si pierdo el foco
         tfAddUser.focusedProperty().addListener(new ChangeListener<Boolean>() {
-                @Override
-                public void changed(ObservableValue<? extends Boolean> arg0, Boolean arg1, Boolean arg2) {
+            @Override
+            public void changed(ObservableValue<? extends Boolean> arg0, Boolean arg1, Boolean arg2) {
                 //Controlamos cuando tf pierde el foco
-                    if(!arg2){
-                        if (!tfAddUser.getText().equals("")) {
-                            try {
-                                
-                                conexion = DBConnection.connect();
-                                
-                                String sql = "SELECT usuario FROM "
-                                        + "usuarios WHERE "
-                                        + "usuario = '"+tfAddUser.getText()+"'";
-                                
-                                ResultSet resultado = conexion.createStatement().executeQuery(sql);
-                                
-                                boolean existeUsuario = resultado.next();
-
-                                if (existeUsuario) {
-                                    JOptionPane.showMessageDialog(null, "Error! ya existe el usuario "+tfAddUser.getText());
-                                    tfAddUser.setStyle("-fx-border-color: #B80000;");
-                                    return;
-                                }
-
-                                tfAddUser.setStyle("-fx-border-color: #3399CC;");
-                                resultado.close();
-                                
-                            } catch (Exception e) {
-                                System.out.println("error de conexion "+e);
+                if (!arg2) {
+                    if (!tfAddUser.getText().equals("")) {
+                        try {
+                            conexion = DBConnection.connect();
+                            
+                            String sql = "SELECT usuario FROM usuarios WHERE usuario = ?";
+                            PreparedStatement statement = conexion.prepareStatement(sql);
+                            statement.setString(1, tfAddUser.getText());
+                            ResultSet resultado = statement.executeQuery();
+                            
+                            boolean existeUsuario = resultado.next();
+                            
+                            if (existeUsuario) {
+                                JOptionPane.showMessageDialog(null, "Error! Ya existe el usuario " + tfAddUser.getText());
+                                tfAddUser.setStyle("-fx-border-color: #B80000;");
+                                return;
                             }
+                            
+                            tfAddUser.setStyle("-fx-border-color: #3399CC;");
+                            resultado.close();
+                            
+                        } catch (Exception e) {
+                            System.out.println("Error de conexión " + e);
                         }
                     }
                 }
-         });
+            }
+        });
     }    
-
+    
     @Override
     public void setScreenParent(ScreensController pantallaPadre) {
         controlador = pantallaPadre;
     }
     
     @FXML
-    private void registroUsuario(ActionEvent event){
-        
-        //______________________________________________________________
-        // VALIDACIONES
+    private void registroUsuario(ActionEvent event) {
+        // Validaciones
         if (!validation.validarVacios(tfAddUser.getText(), "USUARIO")) {
             return;
         }
@@ -121,19 +119,16 @@ public class RegistroController implements Initializable, ControlledScreen {
         if (!validation.validaPassword(tfAddPass.getText(), tfConfirmar.getText())) {
             return;
         }
-       
-        //______________________________________________________________
-        // PREPARAMOS LA SENTENCIA PARA INSERTAR LOS DATOS
+        
+        // Preparamos la sentencia para insertar los datos
         try {
             conexion = DBConnection.connect();
-            String sql = "INSERT INTO usuario "
-                    + "(nombre, apellido, sexo, email, usuario, pass) "
-                    + "VALUES (?, ?, ?, ?, ?, ?)";
+            String sql = "INSERT INTO usuario (nombre, apellido, sexo, email, usuario, pass) VALUES (?, ?, ?, ?, ?, ?)";
             
             PreparedStatement estado = conexion.prepareStatement(sql);
             estado.setString(1, tfAddNombre.getText());
             estado.setString(2, tfAddApellido.getText());
-            estado.setString(3, cbAddsex.getValue().toString());
+            estado.setString(3, cbAddsex.getValue());
             estado.setString(4, tfAddCorreo.getText());
             estado.setString(5, tfAddUser.getText());
             estado.setString(6, DigestUtils.sha1Hex(tfAddPass.getText()));
@@ -144,20 +139,18 @@ public class RegistroController implements Initializable, ControlledScreen {
             tfAddUser.setText("");
             tfAddPass.setText("");
             tfConfirmar.setText("");
-            cbAddsex.setValue("");
+            cbAddsex.setValue(null);
             
             int n = estado.executeUpdate();
             
             if (n > 0) {
-                JOptionPane.showMessageDialog(null, "Fallo el registro");
-            } 
+                JOptionPane.showMessageDialog(null, "Registro exitoso");
+            }
             
             estado.close();
             
         } catch (SQLException e) {
-            
-            JOptionPane.showMessageDialog(null, "Fallo el registro "+e);
-            
+            JOptionPane.showMessageDialog(null, "Fallo el registro " + e);
         }
     }
     
@@ -169,7 +162,7 @@ public class RegistroController implements Initializable, ControlledScreen {
         tfAddUser.setText("");
         tfAddPass.setText("");
         tfConfirmar.setText("");
-        cbAddsex.setValue("");
+        cbAddsex.setValue(null);
         
         tfAddUser.setStyle("-fx-border-color: #3399CC;");
         
@@ -181,3 +174,4 @@ public class RegistroController implements Initializable, ControlledScreen {
         this.controlesBasicos.salirSistema();
     }
 }
+

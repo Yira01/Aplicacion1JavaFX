@@ -8,6 +8,8 @@
         "c:\\JavaXF\\openjfx-22.0.1_windows-x64_bin-sdk\\javafx-sdk-22.0.1\\lib\\javafx.media.jar",
         "c:\\JavaXF\\openjfx-22.0.1_windows-x64_bin-sdk\\javafx-sdk-22.0.1\\lib\\javafx.swing.jar",
         "c:\\JavaXF\\openjfx-22.0.1_windows-x64_bin-sdk\\javafx-sdk-22.0.1\\lib\\javafx.web.jar",
-        "c:\\JavaXF\\openjfx-22.0.1_windows-x64_bin-sdk\\javafx-sdk-22.0.1\\lib\\javafx-swt.jar"
+        "c:\\JavaXF\\openjfx-22.0.1_windows-x64_bin-sdk\\javafx-sdk-22.0.1\\lib\\javafx-swt.jar",
+        "librerias/commons-codec-1.17.0.jar",
+        "librerias/postgresql-42.6.2.jar"
     ]
 }

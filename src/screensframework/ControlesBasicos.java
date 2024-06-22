@@ -18,6 +18,6 @@ public class ControlesBasicos {
         
         if (pregunta == JOptionPane.YES_OPTION) {
             Platform.exit();
-        } //Cambio
+        }
     }
 }
